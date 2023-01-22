@@ -8,7 +8,7 @@ import GoogleProvider from "next-auth/providers/google";
 
 import { env } from "../../../env/server.mjs";
 
-const config: DynamoDBClientConfig = {
+const awsConfig: DynamoDBClientConfig = {
   credentials: {
     accessKeyId: env.NEXT_AUTH_AWS_ACCESS_KEY,
     secretAccessKey: env.NEXT_AUTH_AWS_SECRET_KEY,
@@ -16,7 +16,7 @@ const config: DynamoDBClientConfig = {
   region: env.NEXT_AUTH_AWS_REGION,
 };
 
-const client = DynamoDBDocument.from(new DynamoDB(config), {
+const client = DynamoDBDocument.from(new DynamoDB(awsConfig), {
   marshallOptions: {
     convertEmptyValues: true,
     removeUndefinedValues: true,
@@ -27,18 +27,31 @@ const client = DynamoDBDocument.from(new DynamoDB(config), {
 export const authOptions: NextAuthOptions = {
   // Include user.id on session
   callbacks: {
-    session({ session, user }) {
+    session(params) {
+      console.log("session: ", params);
+      const { session, user } = params;
+
       if (session.user) {
         session.user.id = user.id;
       }
       return session;
     },
+    signIn(params) {
+      console.log("signIn: ", params);
+      return true;
+    },
   },
   // Configure one or more authentication providers
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_ID ?? "",
-      clientSecret: process.env.GOOGLE_SECRET ?? "",
+      clientId: env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+        },
+      },
     }),
     // ...add more providers here
   ],
