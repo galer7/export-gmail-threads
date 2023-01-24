@@ -1,9 +1,8 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import type { Credentials } from "google-auth-library";
 
 import { env } from "../env/server.mjs";
 
-export async function getAccountData(userId: string): Promise<Credentials> {
+export async function getAccessToken(userId: string) {
   const dynamoClient = new DocumentClient({
     region: env.NEXT_AUTH_AWS_REGION,
     credentials: {
@@ -27,19 +26,7 @@ export async function getAccountData(userId: string): Promise<Credentials> {
   if (!Count) throw new Error("Account not found in table!");
   if (Count > 1) throw new Error("Multiple accounts feed that pattern!");
 
-  const [foundAccount] = Items as [NextAuthStoredAccount];
+  const [foundAccount] = Items as [{ access_token?: string }];
 
-  //   console.log(foundAccount);
-
-  return {
-    access_token: foundAccount.access_token,
-    expiry_date: foundAccount.expires_at,
-    id_token: foundAccount.id_token,
-    token_type: foundAccount.token_type,
-    refresh_token: foundAccount.id_token, // TODO: find real refresh_token
-  };
+  return foundAccount.access_token?.trim();
 }
-
-type NextAuthStoredAccount = Omit<Credentials, "expiry_date"> & {
-  expires_at: number;
-};

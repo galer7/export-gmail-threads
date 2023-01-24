@@ -1,19 +1,40 @@
-import { OAuth2Client } from "google-auth-library";
-import { env } from "../env/server.mjs";
-import { getAccountData } from "./documentClient";
+import axios from "axios";
+import { getAccessToken } from "./documentClient";
 
-let OAuthClient: OAuth2Client | undefined;
-
-export async function getGoogleOAuthClient(userId: string) {
-  if (OAuthClient) return OAuthClient;
-
-  const newOAuthClient = new OAuth2Client(
-    env.GOOGLE_CLIENT_ID,
-    env.GOOGLE_CLIENT_SECRET
+export async function getLabelsList(userId: string) {
+  return makeAuthorizedRequest<LabelsListResponse>(
+    userId,
+    "https://gmail.googleapis.com/gmail/v1/users/me/labels"
   );
+}
 
-  const account = await getAccountData(userId);
-  newOAuthClient.setCredentials(account);
+export async function getThreadsList(userId: string) {
+  return makeAuthorizedRequest<ThreadsListResponse>(
+    userId,
+    "https://gmail.googleapis.com/gmail/v1/users/me/threads"
+  );
+}
 
-  return newOAuthClient;
+async function makeAuthorizedRequest<T>(userId: string, url: string) {
+  const accessToken = await getAccessToken(userId);
+  if (!accessToken) throw new Error("Nullish access_token!");
+
+  return axios.get<T>(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+interface LabelsListResponse {
+  labels: Array<{ id: string; name: string; type: "user" | "system" }>;
+}
+
+interface ThreadsListResponse {
+  threads: Array<{
+    id: string;
+    snippet: string;
+    historyId: string;
+    messages: Array<{ id: string; labelIds: string[] }>; // TODO:
+  }>;
 }

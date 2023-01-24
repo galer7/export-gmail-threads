@@ -6,7 +6,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { api } from "../utils/api";
 
 const Home: NextPage = () => {
-  const labelsList = api.labels.list.useQuery();
+  api.labels.list.useQuery();
 
   return (
     <>
@@ -46,7 +46,7 @@ const Home: NextPage = () => {
           </div>
           <div className="flex flex-col items-center gap-2">
             <p className="text-2xl text-white">
-              {labelsList.data || "Loading tRPC query..."}
+              {undefined || "Loading tRPC query..."}
             </p>
             <AuthShowcase />
           </div>
